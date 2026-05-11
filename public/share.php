@@ -5,6 +5,65 @@ require __DIR__ . '/../lib/layout.php';
 
 $staff = current_staff();
 $docId = (int) ($_GET['doc'] ?? 0);
+
+// Search-first mode: no doc selected yet
+if ($docId === 0) {
+    $q = trim($_GET['q'] ?? '');
+    $results = [];
+
+    if ($q !== '') {
+        $stmt = db()->prepare("SELECT * FROM documents WHERE title LIKE ? ORDER BY created_at DESC");
+        $stmt->execute(['%' . $q . '%']);
+        $results = $stmt->fetchAll();
+    }
+
+    render_header('Find & Share', $staff);
+    ?>
+
+    <a href="/admin.php" class="back-link">← back to admin</a>
+
+    <h1 class="page-title">Find & Share</h1>
+    <p class="page-subtitle">Search for a document by title, then create a share link.</p>
+
+    <section class="card">
+        <form method="get" action="/share.php" class="search-bar">
+            <input type="text" name="q" value="<?= h($q) ?>" placeholder="Search documents by title..." autofocus>
+            <button type="submit" class="btn">Search</button>
+        </form>
+
+        <?php if ($q !== ''): ?>
+            <?php if (empty($results)): ?>
+                <p class="empty">No documents found matching "<?= h($q) ?>"</p>
+            <?php else: ?>
+                <?php foreach ($results as $r):
+                    $now = date('Y-m-d H:i:s');
+                    $isScheduled = $r['published_at'] !== null && $r['published_at'] > $now;
+                ?>
+                    <div class="search-result">
+                        <div>
+                            <div class="search-result-title"><?= h($r['title']) ?></div>
+                            <div class="search-result-meta">
+                                <span class="id"><?= h($r['slug']) ?: '#' . (int) $r['id'] ?></span>
+                                <?php if ($isScheduled): ?>
+                                    <span class="badge badge-warn">Scheduled</span>
+                                <?php else: ?>
+                                    <span class="badge badge-ok">Published</span>
+                                <?php endif ?>
+                            </div>
+                        </div>
+                        <a href="/share.php?doc=<?= (int) $r['id'] ?>" class="btn-link">Share →</a>
+                    </div>
+                <?php endforeach ?>
+            <?php endif ?>
+        <?php endif ?>
+    </section>
+
+    <?php
+    render_footer();
+    exit;
+}
+
+// Direct share mode: doc selected
 $stmt = db()->prepare('SELECT * FROM documents WHERE id = ?');
 $stmt->execute([$docId]);
 $doc = $stmt->fetch();
@@ -46,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 render_header('Share · ' . $doc['title'], $staff);
 ?>
 
-<a href="/admin.php" class="back-link">← back to admin</a>
+<a href="/share.php" class="back-link">← find another document</a>
 
 <h1 class="page-title">Share "<?= h($doc['title']) ?>"</h1>
 <p class="page-subtitle">Generate a share link for a recipient.</p>
