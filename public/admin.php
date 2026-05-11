@@ -14,16 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($title === '' || $body === '') {
         $error = 'Title and body are required.';
     } else {
+        $slug = generate_slug();
         $stmt = db()->prepare('
-            INSERT INTO documents (title, body, created_by, published_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO documents (title, body, created_by, published_at, slug)
+            VALUES (?, ?, ?, ?, ?)
         ');
-        $stmt->execute([$title, $body, $staff['id'], $publishedAt]);
+        $stmt->execute([$title, $body, $staff['id'], $publishedAt, $slug]);
         $docId = (int) db()->lastInsertId();
 
-        audit_log('create', 'document', $docId, ['title' => $title, 'published_at' => $publishedAt]);
+        audit_log('create', 'document', $docId, ['title' => $title, 'published_at' => $publishedAt, 'slug' => $slug]);
 
-        header('Location: /admin.php?created=' . $docId);
+        header('Location: /admin.php?created=' . $docId . '&slug=' . urlencode($slug));
         exit;
     }
 }
@@ -42,7 +43,7 @@ render_header('Admin', $staff);
 <p class="page-subtitle">Create documents and generate share links for recipients.</p>
 
 <?php if (!empty($_GET['created'])): ?>
-    <div class="banner banner-success">Document #<?= (int) $_GET['created'] ?> created.</div>
+    <div class="banner banner-success">Document <?= h($_GET['slug'] ?? '#' . (int) $_GET['created']) ?> created.</div>
 <?php endif ?>
 
 <?php if (!empty($_GET['schedule_updated'])): ?>
@@ -94,7 +95,7 @@ render_header('Admin', $staff);
                     $isScheduled = $d['published_at'] !== null && $d['published_at'] > $now;
                 ?>
                     <tr>
-                        <td class="id">#<?= (int) $d['id'] ?></td>
+                        <td class="id"><?= h($d['slug']) ?: '#' . (int) $d['id'] ?></td>
                         <td><?= h($d['title']) ?></td>
                         <td><?= h($d['creator_name']) ?></td>
                         <td>

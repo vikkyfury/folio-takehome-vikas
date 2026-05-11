@@ -49,7 +49,7 @@ render_header('Share · ' . $doc['title'], $staff);
 <a href="/admin.php" class="back-link">← back to admin</a>
 
 <h1 class="page-title">Share "<?= h($doc['title']) ?>"</h1>
-<p class="page-subtitle">Generate a one-time link for a recipient.</p>
+<p class="page-subtitle">Generate a share link for a recipient.</p>
 
 <?php if ($error): ?>
     <div class="banner banner-error"><?= h($error) ?></div>
@@ -57,8 +57,13 @@ render_header('Share · ' . $doc['title'], $staff);
 
 <?php if ($created_token): ?>
     <div class="banner banner-success">
-        Share link ready:
+        Share link ready:<br>
         <code>http://<?= h($_SERVER['HTTP_HOST']) ?>/view.php?token=<?= h($created_token) ?></code>
+        <?php if ($doc['slug']): ?>
+            <br><br>
+            Readable link (requires email verification):<br>
+            <code>http://<?= h($_SERVER['HTTP_HOST']) ?>/view.php?slug=<?= h($doc['slug']) ?></code>
+        <?php endif ?>
     </div>
 <?php endif ?>
 
