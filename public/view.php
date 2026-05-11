@@ -27,6 +27,18 @@ if (!$doc) {
     exit;
 }
 
+if ($doc['published_at'] !== null && $doc['published_at'] > date('Y-m-d H:i:s')) {
+    render_header('Not yet available');
+    ?>
+    <div class="centered-message">
+        <h1>Not yet available</h1>
+        <p>This document is scheduled to be available on <?= h(date('F j, Y \a\t g:i A', strtotime($doc['published_at']))) ?>.</p>
+    </div>
+    <?php
+    render_footer();
+    exit;
+}
+
 render_header($doc['title']);
 ?>
 
