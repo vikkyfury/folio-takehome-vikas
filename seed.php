@@ -32,6 +32,12 @@ $stmt = $pdo->prepare('
 ');
 $stmt->execute([$docId, $token, 'recipient@example.com']);
 
+run_migrations($pdo, fresh: true);
+
+// Set a known slug for the seeded document (for consistent testing)
+$pdo->prepare("UPDATE documents SET slug = ? WHERE title = 'Welcome Packet'")->execute(['FOLIO-W3LC']);
+
 echo "Seeded db.sqlite.\n";
 echo "Admin:        http://localhost:8000/admin.php\n";
 echo "Sample share: http://localhost:8000/view.php?token={$token}\n";
+echo "Sample slug:  http://localhost:8000/view.php?slug=FOLIO-W3LC\n";
